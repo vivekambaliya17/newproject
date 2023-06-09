@@ -66,6 +66,14 @@
         
         data()
         
+
+
+        let get =async()=>{
+            let req = await fetch(`http://localhost:7777/blog/view`)
+                let res = await req.json();
+                console.log(res);
+        }
+        get()
     </script>
 </body>
 </html>

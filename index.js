@@ -7,7 +7,8 @@ const passport = require('passport');
 const loclalAuth = require('./middleware/passauth');
 const googleauth = require('./middleware/googleAuth');
 const gitAuth = require('./middleware/githubauth');
-const nodemailer = require('nodemailer')
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 require('dotenv').config()
 let port = process.env.PORT || 7777;
 const app = express();
@@ -44,10 +45,18 @@ app.post('/sigup',async(req,res)=>{
         else if(!chackuser){
         
         if(password==Cpassword){
-            await sigupSchema.create(req.body)
+            bcrypt.hash(password, 10, async (err, hash)=> {
+                if(err) {
+                 console.log(err);
+                }
+                else{
+                    req.body.password = hash; 
+                    console.log(hash);
+                    await sigupSchema.create(req.body)
+                    return res.render('login')
+                }
+             });
             // res.cookie('username', chackuser.Username)
-            
-           return res.render('login')
         }
         else{
             return  res.send('password not match');
@@ -68,19 +77,18 @@ app.post('/sigup',async(req,res)=>{
 app.get('/login',(req,res)=>{
     res.render("login")
 })
-// app.post('/login', ,async(req,res)=>{
-
-// });
-app.post('/login', passport.authenticate('local', { failureRedirect: '/login' }), async(req,res)=>{
+let passportAuth = passport.authenticate('local', { failureRedirect: '/login'  })
+app.post('/login',passportAuth, async(req,res)=>{
 
     console.log(req.body);
     try {
         let username = req.body.username
         let corect = await sigupSchema.findOne({username:username})
         let password = req.body.password
+        let bcryptpassword = corect.password
+        console.log(bcryptpassword);
         console.log(`email =${username} password =${password}`);
-        
-        if(corect.username === username && corect.password === password ){
+        if(corect.username === username ){
             req.session.views=corect.id;
             console.log(req.session);
             return res.render('blog')
@@ -235,4 +243,4 @@ app.post('/passchange',async (req,res)=>{
 app.listen(port, ()=>{
     console.log(`localhost:${port}`);
     connect()
-});
+}); 
